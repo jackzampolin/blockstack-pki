@@ -18,11 +18,11 @@ class IdentityNode{
     }
 }
 
-console.log("Generating a new mnomonic and then deriving keys with explainations")
+console.log("Generating a new mnomonic and then deriving keys with explanations")
 
 let keychain = new keychains.PrivateKeychain()
 
-var mnemonic = "soccer settle execute ball coast stairs weekend manage oval garlic cabbage badge"
+var mnemonic = "slam cheap sponsor average issue lemon nuclear file gesture snake other seminar"
 
 // console.log("  mnemonic:", keychain.mnemonic())
 console.log("  mnemonic:", mnemonic)

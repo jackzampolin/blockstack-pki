@@ -28,7 +28,7 @@ func genMnemonic() bip39.Mnemonics {
 }
 
 func main() {
-	fmt.Println("Generating a new mnomonic and then deriving keys with explainations")
+	fmt.Println("Generating a new mnomonic and then deriving keys with explanations")
 	mnemonic := genMnemonic()
 
 	fmt.Println("  mnemonic:", mnemonic.JoinWords())
