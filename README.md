@@ -63,3 +63,6 @@ Identity 0: 888'/0'/0'
 ### Potential applications
 
 1. Write a program that generates a seed, derives the first ID, issues a subdomain registrar call to register a subdomain to the first identity address and then sends the seed back to the user all the while not exposing the seed. This could be very useful for use on-boarding.
+2. Write a program that derives the first `n` identity addresses, btc wallet and discovers all names associated as well as any BTC on the keychainPhrase
+3. A utility for recovering BTC sent to an identity address
+4. A utility for generating identities for headless devices, signing into applications, and then writing data to that application's storage. 
