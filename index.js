@@ -1,5 +1,4 @@
 var blockstack = require('blockstack')
-const keychains = require('blockstack-keychains')
 const bitcoin = require('bitcoinjs-lib')
 const bip39 = require('bip39')
 const crypto = require('crypto')
@@ -36,7 +35,7 @@ class HdNode {
 // Mnemonic
 ///////////////////////
 
-console.log("Generating a new mnemonic and then deriving keys with explanations")
+console.log("Using saved mnemonic to show equality with golang example code")
 
 var mnemonic = "slam cheap sponsor average issue lemon nuclear file gesture snake other seminar"
 
@@ -59,24 +58,18 @@ class MasterNode extends HdNode {
   }
   getIdentityNode(index) {
     // Derive browser wallet node at `888'/0'/index'`
-    return new IdentityNode(this.node.deriveHardened(888).deriveHardened(0).deriveHardened(index))
+    var identitiesNode = this.node.deriveHardened(888).deriveHardened(0)
+    var pubKeyHex = identitiesNode.keyPair.getPublicKeyBuffer().toString('hex')
+    var salt = crypto.createHash('sha256').update(pubKeyHex).digest('hex')
+    return new IdentityNode(identitiesNode.deriveHardened(index), salt)
   }
 }
 
-const createMasterNode = (mnemonic) => {
-  return new MasterNode(
-    bitcoin.HDNode.fromSeedBuffer(bip39.mnemonicToSeed(mnemonic))
-  )
-}
+var myMasterNode = new MasterNode(bitcoin.HDNode.fromSeedBuffer(bip39.mnemonicToSeed(mnemonic)))
 
-var myMasterNode = createMasterNode(mnemonic)
-
-console.log(`
-==== Master Node ====
-- Address:
-${myMasterNode.getAddress()}
-- PrivateKey:
-${myMasterNode.getSKHex()}
+console.log(`==== Master Node ====
+  - Address: ${myMasterNode.getAddress()}
+  - PrivKey: ${myMasterNode.getHex()}
 `)
 
 
@@ -92,12 +85,9 @@ class WalletNode extends HdNode {
 
 const myWalletNode = myMasterNode.getWalletNode()
 
-console.log(`
-==== Bitcoin Wallet Node ====
-- Address:
-${myWalletNode.getAddress()}
-- PrivateKey:
-${myWalletNode.getSKHex()}
+console.log(`==== Wallet Node ====
+  - Address: ${myWalletNode.getAddress()}
+  - PrivKey: ${myWalletNode.getHex()}
 `)
 
 
@@ -106,26 +96,32 @@ ${myWalletNode.getSKHex()}
 ///////////////////////
 
 class IdentityNode extends HdNode {
-  constructor(node){
+  constructor(node, salt){
     super(node)
+    this.salt = salt
   }
   getAppsNode() {
-    return new AppsNode(this.node.deriveHardened(0))
+    return new AppsNode(this.node.deriveHardened(0), this.salt)
+  }
+  getEncryptionNode() {
+    return this.node.deriveHardened(1)
+  }
+  getSigningNode() {
+    return this.node.deriveHardened(2)
   }
 }
 
-const createIdentityNode = index => (
-  myMasterNode.getIdentityNode(index)
-)
+const myIdentityNode = myMasterNode.getIdentityNode(0)
+const myIdentityNode1 = myMasterNode.getIdentityNode(1)
 
-const myIdentityNode = createIdentityNode(0)
+console.log(`==== Identity Node 0 ====
+  - Address: ${myIdentityNode.getAddress()}
+  - PrivKey: ${myIdentityNode.getHex()}
+`)
 
-console.log(`
-==== Identity 1 Node (You can make many) ====
-- Address:
-${myIdentityNode.getAddress()}
-- PrivateKey:
-${myIdentityNode.getSKHex()}
+console.log(`==== Identity Node 1 ====
+  - Address: ${myIdentityNode1.getAddress()}
+  - PrivKey: ${myIdentityNode1.getHex()}
 `)
 
 
@@ -134,13 +130,14 @@ ${myIdentityNode.getSKHex()}
 ///////////////////////
 
 class AppsNode extends HdNode {
-  constructor(node){
+  constructor(node, salt){
     super(node)
+    this.salt = salt
   }
   getAppNode(appDomain) {
     const hash = crypto
       .createHash('sha256')
-      .update(appDomain)
+      .update(`${appDomain}${this.salt}`)
       .digest('hex')
     const appIndex = hashCode(hash)
     const appNode = this.node.deriveHardened(appIndex)
@@ -150,12 +147,9 @@ class AppsNode extends HdNode {
 
 const myAppsNode = myIdentityNode.getAppsNode()
 
-console.log(`
-==== Identity 1's Apps Node  ====
-- Address:
-${myAppsNode.getAddress()}
-- PrivateKey:
-${myAppsNode.getSKHex()}
+console.log(`==== Identity Node 0 Apps Node ====
+  - Address: ${myAppsNode.getAddress()}
+  - PrivKey: ${myAppsNode.getHex()}
 `)
 
 
@@ -166,22 +160,16 @@ ${myAppsNode.getSKHex()}
 class AppNode extends HdNode {
   constructor(node, appDomain) {
     super(node)
+    this.appDomain = appDomain
   }
   getAppDomain() {
     return this.appDomain
   }
 }
 
-const createAppNode = domain => (
-  myAppsNode.getAppNode(domain)
-)
+const myAppNode = myAppsNode.getAppNode('https://www.foo.com')
 
-const myAppNode = createAppNode('https://www.foo.com')
-
-console.log(`
-==== Identity 1's "https://www.foo.com" App Node  ====
-- Address:
-${myAppsNode.getAddress()}
-- PrivateKey:
-${myAppsNode.getSKHex()}
+console.log(`==== Identity Node 0 App Node "https://www.foo.com" ====
+  - Address: ${myAppNode.getAddress()}
+  - PrivKey: ${myAppNode.getHex()}
 `)
